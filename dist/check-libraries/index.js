@@ -42783,13 +42783,25 @@ class Charmcraft {
             const resourceDigest = yield (0, docker_1.getImageDigest)(resource_image);
             const args = [
                 'upload-resource',
-                '--quiet',
                 name,
                 resource_name,
                 '--image',
                 resourceDigest,
+                '--format',
+                'json',
+                '--verbosity',
+                'brief',
             ];
-            yield (0, exec_1.exec)('charmcraft', args, this.execOptions);
+            const output = yield (0, exec_1.getExecOutput)('charmcraft', args, this.execOptions);
+            /*
+            stdout looks like:
+              Uploading from local registry.
+              Image uploaded, new remote digest: sha256:<some-sha>.
+              Revision <some-number> created of resource 'oci-image' for charm 'some-charm'.
+            We need to get <some-number>.
+            */
+            const json_output = JSON.parse(output.stdout);
+            return json_output['revision'];
         });
     }
     buildResourceFlag(charmName, name, image) {
@@ -42801,7 +42813,7 @@ class Charmcraft {
               Revision    Created at    Size
               2 <- This   2022-01-20    1024B
               1           2021-07-19    512B
-              
+        
             */
             if (result.stdout.trim().split('\n').length <= 1) {
                 throw new Error(`Resource '${name}' does not have any uploaded revisions.`);

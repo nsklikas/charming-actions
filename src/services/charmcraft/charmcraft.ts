@@ -126,13 +126,26 @@ class Charmcraft {
 
     const args = [
       'upload-resource',
-      '--quiet',
       name,
       resource_name,
       '--image',
       resourceDigest,
+      '--format',
+      'json',
+      '--verbosity',
+      'brief',
     ];
-    await exec('charmcraft', args, this.execOptions);
+    const output = await getExecOutput('charmcraft', args, this.execOptions);
+
+    /*
+    stdout looks like:
+      Uploading from local registry.
+      Image uploaded, new remote digest: sha256:<some-sha>.
+      Revision <some-number> created of resource 'oci-image' for charm 'some-charm'.
+    We need to get <some-number>.
+    */
+    const jsonOutput = JSON.parse(output.stdout)
+    return jsonOutput.revision
   }
 
   async buildResourceFlag(charmName: string, name: string, image: string) {
@@ -144,7 +157,7 @@ class Charmcraft {
       Revision    Created at    Size
       2 <- This   2022-01-20    1024B
       1           2021-07-19    512B
-      
+
     */
 
     if (result.stdout.trim().split('\n').length <= 1) {
